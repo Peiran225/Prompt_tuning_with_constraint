@@ -1,0 +1,9 @@
+Namespace(similarity=None, log_file=None, path='bert-base-uncased', hook_layer=-1, prompts_dir='/fs/nexus-scratch/peiran/prompting_with_constraints/prompts', prompt_groups=['T', 'R', 'U', 'E'], prompt='subj_4', task='subj', pile_len=-1, learning_rate=0.001, learning_rate_LM=0.001, gamma=5e-07, epoch=1, seed=50, num_of_initial_text=10000, particular_layer=-3, baseline_only=False, base_initial='Text')
+finishing tokeninzing
+baseline_only
+False
+train the model when the hook layer is -2
+trainable params: 13,058 || all params: 109,496,836 || trainable%: 0.011925458741109195
+{'eval_loss': 0.17859233915805817, 'eval_accuracy': 0.9305, 'eval_runtime': 5.6378, 'eval_samples_per_second': 354.75, 'eval_steps_per_second': 11.175, 'epoch': 1.0}
+{'train_runtime': 54.7674, 'train_samples_per_second': 146.072, 'train_steps_per_second': 4.565, 'train_loss': 0.35091827392578123, 'epoch': 1.0}
+trainer.metrics_log [{'epoch': 1.0, 'eval_loss': 0.17859233915805817, 'eval_accuracy': 0.9305}]

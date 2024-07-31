@@ -1,0 +1,4 @@
+{
+    "SST-2_0": "What is the sentiment of this sentence?\nPositive, Negative.",
+    "subtask047_misc_answering_science_questions": "Please indicate the correct answer: A, B, C, D or E. If the question is not answerable or you're not sure about the answer, generate 'E' which implies \"I don't know\"."
+}
