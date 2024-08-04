@@ -210,7 +210,7 @@ def main(args):
     if args.num_of_initial_text==1:
         prompt_names = [args.prompt]
     else:
-        args.prompt_groups = ["TRUE", "NI", "PILE"]
+        args.prompt_groups = ["TRUE"]#, "NI", "PILE"]
         prompt_names = []
         for prompt_group in args.prompt_groups:
             if prompt_group == "TRUE":
