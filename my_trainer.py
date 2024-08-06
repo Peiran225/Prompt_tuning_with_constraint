@@ -2,7 +2,6 @@
 from transformers import (
     Trainer,
 )
-from MBA import MBA2
 import torch
 import torch.distributed as dist
 from packaging import version

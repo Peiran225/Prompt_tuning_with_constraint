@@ -1,0 +1,57 @@
+/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/main_mean_of_prompts.py:254: SyntaxWarning: "is not" with a literal. Did you mean "!="?
+  elif args.particular_layer is not None and args.num_of_initial_text is not 1:
+Map:   0%|          | 0/9427 [00:00<?, ? examples/s]Map:  11%|█         | 1000/9427 [00:00<00:04, 2018.14 examples/s]Map:  21%|██        | 2000/9427 [00:00<00:03, 2425.16 examples/s]Map:  32%|███▏      | 3000/9427 [00:01<00:02, 2615.80 examples/s]Map:  42%|████▏     | 4000/9427 [00:01<00:01, 2784.74 examples/s]Map:  53%|█████▎    | 5000/9427 [00:01<00:01, 2874.77 examples/s]Map:  64%|██████▎   | 6000/9427 [00:02<00:01, 2936.89 examples/s]Map:  74%|███████▍  | 7000/9427 [00:02<00:00, 2972.96 examples/s]Map:  85%|████████▍ | 8000/9427 [00:02<00:00, 2950.45 examples/s]Map:  95%|█████████▌| 9000/9427 [00:03<00:00, 3038.23 examples/s]Map: 100%|██████████| 9427/9427 [00:03<00:00, 3043.75 examples/s]Map: 100%|██████████| 9427/9427 [00:03<00:00, 2825.55 examples/s]
+Map:   0%|          | 0/3270 [00:00<?, ? examples/s]Map:  31%|███       | 1000/3270 [00:00<00:00, 3141.63 examples/s]Map:  61%|██████    | 2000/3270 [00:00<00:00, 3127.15 examples/s]Map:  92%|█████████▏| 3000/3270 [00:00<00:00, 3023.30 examples/s]Map: 100%|██████████| 3270/3270 [00:01<00:00, 2935.75 examples/s]
+Some weights of BertForSequenceClassification were not initialized from the model checkpoint at bert-base-uncased and are newly initialized: ['classifier.bias', 'classifier.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+Detected kernel version 4.18.0, which is below the recommended minimum of 5.5.0; this can cause the process to hang. It is recommended to upgrade the kernel to the minimum version or higher.
+wandb: Currently logged in as: pyu123 (auc_prompting). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.17.5 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.17.0
+wandb: Run data is saved locally in /fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/wandb/run-20240806_004639-fnr8th8q
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run peach-plasma-613
+wandb: ⭐️ View project at https://wandb.ai/auc_prompting/huggingface
+wandb: 🚀 View run at https://wandb.ai/auc_prompting/huggingface/runs/fnr8th8q
+  0%|          | 0/295 [00:00<?, ?it/s]You're using a BertTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+Traceback (most recent call last):
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/main_mean_of_prompts.py", line 521, in <module>
+    main(args)
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/main_mean_of_prompts.py", line 346, in main
+    trainer.train()
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/transformers/trainer.py", line 1553, in train
+    return inner_training_loop(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/my_trainer.py", line 519, in _inner_training_loop
+    tr_loss_step = self.training_step(model, inputs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/my_trainer.py", line 899, in training_step
+    loss = self.compute_loss(model, inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/my_trainer.py", line 731, in compute_loss
+    outputs = model(**inputs)
+              ^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/peft/peft_model.py", line 861, in forward
+    return self.base_model(inputs_embeds=inputs_embeds, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 1562, in forward
+    outputs = self.bert(
+              ^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 988, in forward
+    buffered_token_type_ids_expanded = buffered_token_type_ids.expand(batch_size, seq_length)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The expanded size of the tensor (533) must match the existing size (512) at non-singleton dimension 1.  Target sizes: [32, 533].  Tensor sizes: [1, 512]
+wandb: - 0.006 MB of 0.006 MB uploadedwandb: \ 0.006 MB of 0.006 MB uploadedwandb: 🚀 View run peach-plasma-613 at: https://wandb.ai/auc_prompting/huggingface/runs/fnr8th8q
+wandb: ⭐️ View project at: https://wandb.ai/auc_prompting/huggingface
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20240806_004639-fnr8th8q/logs

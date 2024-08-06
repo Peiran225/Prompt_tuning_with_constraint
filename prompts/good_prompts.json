@@ -23,5 +23,10 @@
     "subj_1": "Is this sentence positive or negative?\nsubjective, objective",
     "subj_2": "Does the given sentence have a subjective or objective opinion?\nsubjective, objective",
     "subj_3": "Was this sentence given subjectively or objectively?",
-    "subj_4": "Did this sentence think subjectively or objectively?"
+    "subj_4": "Did this sentence think subjectively or objectively?",
+    "boolq_0": "You are given a passage. Based on this, please answer the questions with true or false.",
+    "boolq_1": "Given corresponding passage and a question, determine whether the answer is true or false.",
+    "boolq_2": "Determine whether a given passage contains sufficient information to answer a provided true or false question.",
+    "boolq_3": "Answer the question after the passage with true or false.",
+    "boolq_4": "Is the anser to the question true or false?"
 }

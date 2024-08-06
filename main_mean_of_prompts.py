@@ -31,7 +31,7 @@ from transformers import GPT2LMHeadModel,GPT2Config
 from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from torch.nn import CrossEntropyLoss
 
-from MBA import MBA2
+
 from data import load_prompt 
 from transformers import set_seed
 import wandb
@@ -64,7 +64,8 @@ PROMPT_DICT = {
             "sst-5": ["sst-5_0", "sst-5_1", "sst-5_2", "sst-5_3", "sst-5_4"],
             "agnews": ["agnews_0", "agnews_1", "agnews_2", "agnews_3", "agnews_4"],
             "trec": ["trec_0", "trec_1", "trec_2", "trec_3", "trec_4"],
-            "subj": ["subj_0", "subj_1", "subj_2", "subj_3", "subj_4"]
+            "subj": ["subj_0", "subj_1", "subj_2", "subj_3", "subj_4"],
+            "boolq": ["boolq_0", "boolq_1", "boolq_2", "boolq_3", "boolq_4"]
         },
     }
 
@@ -166,6 +167,29 @@ def main(args):
         tokenized_datasets['validation'] = tokenized_datasets['test']
         # Delete 'old_key'
         del tokenized_datasets['test']
+        num_label = 2
+    elif args.task=="boolq":
+        dataset = load_dataset("google/boolq")
+        def create_prompt(example):
+            question = example[0]
+            passage = example[1]
+            prompt = f"Passage: {question} Question: {passage}"
+            print(prompt)
+            return prompt
+
+        def preprocess(examples):
+            combine_question_and_passage = zip(examples["passage"],examples["question"])
+            prompts = [create_prompt(example) for example in combine_question_and_passage]
+            outputs = tokenizer(prompts, truncation=True, padding=True)
+            labels = [1 if answer else 0 for answer in examples['answer']]
+            outputs['label'] = labels
+            return outputs
+        
+        tokenized_datasets = dataset.map(
+            preprocess,
+            batched=True,
+            remove_columns=['question', 'passage','answer'],
+            )
         num_label = 2
 
     
@@ -468,10 +492,10 @@ if __name__ == '__main__':
     parser.add_argument("--log_file", default=None, type=str)
     parser.add_argument("--path", default="FacebookAI/roberta-base", type=str)
     parser.add_argument("--hook_layer", default=-1, type=int)
-    parser.add_argument("--prompts_dir", default="/fs/nexus-scratch/peiran/prompting_with_constraints/prompts", type=str)
+    parser.add_argument("--prompts_dir", default="/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/prompts", type=str)
     parser.add_argument("--prompt_groups", default=["TRUE", ], type=list)
     parser.add_argument("--prompt", default=None, type=str)
-    parser.add_argument("--task", default="trec", type=str)
+    parser.add_argument("--task", default="boolq", type=str)
     # parser.add_argument("--dataset", default="trec", type=str)
     parser.add_argument("--pile_len", default=-1, type=int)
     parser.add_argument("--learning_rate", default=0.01, type=float)

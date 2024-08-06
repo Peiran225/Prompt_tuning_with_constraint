@@ -1,0 +1,37 @@
+  0%|          | 0/295 [00:00<?, ?it/s]You're using a BertTokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+Traceback (most recent call last):
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/main_mean_of_prompts.py", line 521, in <module>
+    main(args)
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/main_mean_of_prompts.py", line 346, in main
+    trainer.train()
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/transformers/trainer.py", line 1553, in train
+    return inner_training_loop(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/my_trainer.py", line 519, in _inner_training_loop
+    tr_loss_step = self.training_step(model, inputs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/my_trainer.py", line 899, in training_step
+    loss = self.compute_loss(model, inputs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/my_trainer.py", line 731, in compute_loss
+    outputs = model(**inputs)
+              ^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/peft/peft_model.py", line 861, in forward
+    return self.base_model(inputs_embeds=inputs_embeds, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 1562, in forward
+    outputs = self.bert(
+              ^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1501, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/fs/nexus-scratch/peiran/anaconda3/envs/c-prompting/lib/python3.11/site-packages/transformers/models/bert/modeling_bert.py", line 988, in forward
+    buffered_token_type_ids_expanded = buffered_token_type_ids.expand(batch_size, seq_length)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: The expanded size of the tensor (533) must match the existing size (512) at non-singleton dimension 1.  Target sizes: [32, 533].  Tensor sizes: [1, 512]
