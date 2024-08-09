@@ -4,6 +4,8 @@ import json
 
 import numpy as np
 import torch
+from datasets import load_dataset
+import requests
 
 from util import prepro_sentence, prepro_sentence_pair, \
     prepro_sentence_pair_single
@@ -329,3 +331,179 @@ def output_metrices(args, dev_results, test_result, prompt, n_prefix, template_i
         with open(os.path.join(args.out_dir, "{}-{}-metrics.json".format(args.task, args.prompt_task)), 'w') as f:
             json.dump(metrices, f)
     
+
+
+def load_and_tokenize_data(task, tokenizer,model_name_or_path, data_dir=None):
+    
+    if task=="SST-2":
+        dataset = load_dataset("sst2")
+        def tokenize_function(examples):
+            # max_length=None => use the model max length (it's actually the default)
+            outputs = tokenizer(examples["sentence"], padding=True, truncation=True) #, max_length=None)
+            return outputs
+        tokenized_datasets = dataset.map(
+            tokenize_function,
+            batched=True,
+            remove_columns=["idx", "sentence"],
+            )
+        num_label = 2
+    elif task=="sst-5":
+        dataset = load_dataset("SetFit/sst5")
+        def tokenize_function(examples):
+            # max_length=None => use the model max length (it's actually the default)
+            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
+            return outputs
+        tokenized_datasets = dataset.map(
+            tokenize_function,
+            batched=True,
+            remove_columns=["text", "label_text"],
+            )
+        num_label = 5
+    elif task=="agnews":
+        dataset = load_dataset("ag_news")
+        def tokenize_function(examples):
+            # max_length=None => use the model max length (it's actually the default)
+            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
+            return outputs
+        tokenized_datasets = dataset.map(
+            tokenize_function,
+            batched=True,
+            remove_columns=["text"],
+            )
+        tokenized_datasets['validation'] = tokenized_datasets['test']
+        # Delete 'old_key'
+        del tokenized_datasets['test']
+        num_label = 4
+    elif task=="trec":
+        dataset = load_dataset("trec")
+        def rename_column(example):
+            example['label'] = example['coarse_label']
+            del example['coarse_label']
+            return example
+        dataset = dataset.map(rename_column)
+        def tokenize_function(examples):
+            # max_length=None => use the model max length (it's actually the default)
+            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
+            return outputs
+        tokenized_datasets = dataset.map(
+            tokenize_function,
+            batched=True,
+            remove_columns=["text", "fine_label"],
+            )
+        tokenized_datasets['validation'] = tokenized_datasets['test']
+        # Delete 'old_key'
+        del tokenized_datasets['test']
+        num_label = 6
+    elif task=="subj":
+        dataset = load_dataset("SetFit/subj")
+        def tokenize_function(examples):
+            # max_length=None => use the model max length (it's actually the default)
+            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
+            return outputs
+        tokenized_datasets = dataset.map(
+            tokenize_function,
+            batched=True,
+            remove_columns=["text", "label_text"],
+            )
+        tokenized_datasets['validation'] = tokenized_datasets['test']
+        # Delete 'old_key'
+        del tokenized_datasets['test']
+        num_label = 2
+    elif task=="boolq":
+        dataset = load_dataset("google/boolq")
+        def create_prompt(example):
+            question = example[0]
+            passage = example[1]
+            prompt = f"Passage: {question} Question: {passage}"
+            # print(prompt)
+            return prompt
+
+        def preprocess(examples):
+            combine_question_and_passage = zip(examples["passage"],examples["question"])
+            prompts = [create_prompt(example) for example in combine_question_and_passage]
+            outputs = tokenizer(prompts, truncation=True, padding=True, max_length=491 if "bert" in model_name_or_path else None)
+            labels = [1 if answer else 0 for answer in examples['answer']]
+            outputs['label'] = labels
+            return outputs
+        
+        tokenized_datasets = dataset.map(
+            preprocess,
+            batched=True,
+            remove_columns=['question', 'passage','answer'],
+            )
+        num_label = 2
+    elif task == "cb":
+        dataset = load_dataset('super_glue', task)
+        def create_prompt(example):
+            premise = example[0]
+            hypothesis= example[1]
+            prompt = f"Premise: {premise} Hypothesis: {hypothesis}"
+            # print(prompt)
+            return prompt
+
+        def preprocess(examples):
+            combine_question_and_passage = zip(examples["premise"],examples["hypothesis"])
+            prompts = [create_prompt(example) for example in combine_question_and_passage]
+            outputs = tokenizer(prompts, truncation=True, padding=True)
+            return outputs
+        
+        tokenized_datasets = dataset.map(
+            preprocess,
+            batched=True,
+            remove_columns=['premise', 'idx','hypothesis'],
+            )
+        num_label = 3
+    elif task == "copa":
+        dataset = load_dataset('super_glue', task)
+        def create_prompt(example):
+            premise = example[0]
+            choice1= example[1]
+            choice2= example[2]
+            question=example[3]
+            prompt = f"Premise: {premise} Choice 1: {choice1} Choice 2: {choice2} Question: {question}"
+            # print(prompt)
+            return prompt
+
+        def preprocess(examples):
+            combine_question_and_passage = zip(examples["premise"],examples["choice1"],examples["choice2"],examples["question"])
+            prompts = [create_prompt(example) for example in combine_question_and_passage]
+            outputs = tokenizer(prompts, truncation=True, padding=True)
+            return outputs
+        
+        tokenized_datasets = dataset.map(
+            preprocess,
+            batched=True,
+            remove_columns=['premise', 'idx','choice1', 'choice2','question'],
+            )
+        for i in range(3):
+            print(tokenized_datasets['train'][i]['input_ids'])
+
+        num_label = 2
+    elif task == "wsc":
+        dataset = load_dataset('super_glue', task)
+        def create_prompt(example):
+            text = example[0]
+            span1_text= example[1]
+            span2_text= example[2]
+            prompt = f"{text} [SEP] {span1_text} [SEP] {span2_text}"
+            # print(prompt)
+            return prompt
+
+        def preprocess(examples):
+            combine_question_and_passage = zip(examples["text"],examples["span1_text"],examples["span2_text"])
+            prompts = [create_prompt(example) for example in combine_question_and_passage]
+            outputs = tokenizer(prompts, truncation=True, padding=True)
+            return outputs
+        
+        tokenized_datasets = dataset.map(
+            preprocess,
+            batched=True,
+            remove_columns=['text', 'idx','span1_text', 'span2_text','span1_index','span2_index'],
+            )
+        num_label = 2
+        
+    print("finishing tokeninzing")
+
+    tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
+    return tokenized_datasets, num_label
+

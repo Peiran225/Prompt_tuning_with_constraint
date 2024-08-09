@@ -798,7 +798,7 @@ class my_trainer(Trainer):
                 _ = model.base_model(inputs_embeds=g_p_inputs_embeds)
                 middle_embeddings_of_g_p = model.base_model.transformer.h[self.hook_layer].embedding_output
                 aux_loss_0 = torch.norm(middle_embeddings[0] - middle_embeddings_of_g_p[0], p=2)
-            elif self.model_name_or_path == "FacebookAI/roberta-base":
+            elif self.model_name_or_path in ["FacebookAI/roberta-base", "FacebookAI/xlm-roberta-large"]:
                 middle_embeddings = model.base_model.base_model.encoder.layer[self.hook_layer].embedding_output
                 g_p_inputs_embeds = model.base_model.base_model.embeddings.word_embeddings(g_p_inputs['input_ids'])
                 _ = model.base_model.base_model(inputs_embeds=g_p_inputs_embeds)
@@ -827,7 +827,7 @@ class my_trainer(Trainer):
                 g_p_inputs_embeds = model.base_model.transformer.wte(g_p_inputs['input_ids'])
             elif self.model_name_or_path == "gpt2-large":
                 g_p_inputs_embeds = model.base_model.transformer.wte(g_p_inputs['input_ids'])
-            elif self.model_name_or_path == "FacebookAI/roberta-base":
+            elif self.model_name_or_path in ["FacebookAI/roberta-base", "FacebookAI/xlm-roberta-large"]:
                 g_p_inputs_embeds = model.base_model.base_model.embeddings.word_embeddings(g_p_inputs['input_ids'])
             elif self.model_name_or_path == "facebook/opt-125m":
                 g_p_inputs_embeds = model.base_model.transformer.wte(g_p_inputs['input_ids'])
@@ -835,8 +835,8 @@ class my_trainer(Trainer):
 
 
             aux_loss_0 = torch.norm(soft_p_inputs_embeddings - g_p_inputs_embeds, p=2, dim=(-1, -2))
-            
-
+            aux_loss_0 = torch.sum(aux_loss_0)
+        # print(self.similarity,aux_loss_0)
 
         
         return aux_loss_0

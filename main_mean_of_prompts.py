@@ -32,7 +32,7 @@ from transformers.modeling_outputs import CausalLMOutputWithCrossAttentions
 from torch.nn import CrossEntropyLoss
 
 
-from data import load_prompt 
+from data import load_prompt,load_and_tokenize_data
 from transformers import set_seed
 import wandb
 
@@ -65,7 +65,10 @@ PROMPT_DICT = {
             "agnews": ["agnews_0", "agnews_1", "agnews_2", "agnews_3", "agnews_4"],
             "trec": ["trec_0", "trec_1", "trec_2", "trec_3", "trec_4"],
             "subj": ["subj_0", "subj_1", "subj_2", "subj_3", "subj_4"],
-            "boolq": ["boolq_0", "boolq_1", "boolq_2", "boolq_3", "boolq_4"]
+            "boolq": ["boolq_0", "boolq_1", "boolq_2", "boolq_3", "boolq_4"],
+            "cb": ["cb_0", "cb_1", "cb_2", "cb_3", "cb_4"],
+            "copa": ["copa_0","copa_1","copa_2","copa_3","copa_4"],
+            "wsc": ["wsc_0","wsc_1","wsc_2","wsc_3","wsc_4"]
         },
     }
 
@@ -94,109 +97,8 @@ def main(args):
         tokenizer.pad_token_id = tokenizer.eos_token_id
 
 
-    if args.task=="SST-2":
-        dataset = load_dataset("sst2")
-        def tokenize_function(examples):
-            # max_length=None => use the model max length (it's actually the default)
-            outputs = tokenizer(examples["sentence"], padding=True, truncation=True) #, max_length=None)
-            return outputs
-        tokenized_datasets = dataset.map(
-            tokenize_function,
-            batched=True,
-            remove_columns=["idx", "sentence"],
-            )
-        num_label = 2
-    elif args.task=="sst-5":
-        dataset = load_dataset("SetFit/sst5")
-        def tokenize_function(examples):
-            # max_length=None => use the model max length (it's actually the default)
-            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
-            return outputs
-        tokenized_datasets = dataset.map(
-            tokenize_function,
-            batched=True,
-            remove_columns=["text", "label_text"],
-            )
-        num_label = 5
-    elif args.task=="agnews":
-        dataset = load_dataset("ag_news")
-        def tokenize_function(examples):
-            # max_length=None => use the model max length (it's actually the default)
-            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
-            return outputs
-        tokenized_datasets = dataset.map(
-            tokenize_function,
-            batched=True,
-            remove_columns=["text"],
-            )
-        tokenized_datasets['validation'] = tokenized_datasets['test']
-        # Delete 'old_key'
-        del tokenized_datasets['test']
-        num_label = 4
-    elif args.task=="trec":
-        dataset = load_dataset("trec")
-        def rename_column(example):
-            example['label'] = example['coarse_label']
-            del example['coarse_label']
-            return example
-        dataset = dataset.map(rename_column)
-        def tokenize_function(examples):
-            # max_length=None => use the model max length (it's actually the default)
-            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
-            return outputs
-        tokenized_datasets = dataset.map(
-            tokenize_function,
-            batched=True,
-            remove_columns=["text", "fine_label"],
-            )
-        tokenized_datasets['validation'] = tokenized_datasets['test']
-        # Delete 'old_key'
-        del tokenized_datasets['test']
-        num_label = 6
-    elif args.task=="subj":
-        dataset = load_dataset("SetFit/subj")
-        def tokenize_function(examples):
-            # max_length=None => use the model max length (it's actually the default)
-            outputs = tokenizer(examples["text"], padding=True, truncation=True) #, max_length=None)
-            return outputs
-        tokenized_datasets = dataset.map(
-            tokenize_function,
-            batched=True,
-            remove_columns=["text", "label_text"],
-            )
-        tokenized_datasets['validation'] = tokenized_datasets['test']
-        # Delete 'old_key'
-        del tokenized_datasets['test']
-        num_label = 2
-    elif args.task=="boolq":
-        dataset = load_dataset("google/boolq")
-        def create_prompt(example):
-            question = example[0]
-            passage = example[1]
-            prompt = f"Passage: {question} Question: {passage}"
-            print(prompt)
-            return prompt
+    tokenized_datasets, num_label = load_and_tokenize_data(args.task, tokenizer, model_name_or_path)
 
-        def preprocess(examples):
-            combine_question_and_passage = zip(examples["passage"],examples["question"])
-            prompts = [create_prompt(example) for example in combine_question_and_passage]
-            outputs = tokenizer(prompts, truncation=True, padding=True)
-            labels = [1 if answer else 0 for answer in examples['answer']]
-            outputs['label'] = labels
-            return outputs
-        
-        tokenized_datasets = dataset.map(
-            preprocess,
-            batched=True,
-            remove_columns=['question', 'passage','answer'],
-            )
-        num_label = 2
-
-    
-
-    print("finishing tokeninzing")
-
-    tokenized_datasets = tokenized_datasets.rename_column("label", "labels")
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer, padding="longest")
     
     # Train (original batches 32)
@@ -207,8 +109,9 @@ def main(args):
         per_device_eval_batch_size=32,
         num_train_epochs=args.epoch,
         weight_decay=0.01, #0.01
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
+        evaluation_strategy="steps",
+        eval_steps=1,
+        save_strategy="steps",
         load_best_model_at_end=True,
         seed=args.seed
     )
@@ -221,6 +124,7 @@ def main(args):
         num_train_epochs=args.epoch,
         weight_decay=0.01, #0.01
         evaluation_strategy="epoch",
+        eval_steps=1,
         save_strategy="epoch",
         load_best_model_at_end=True,
         seed=args.seed
@@ -299,13 +203,13 @@ def main(args):
             each_layer = list(range(0,12))
         elif model_name_or_path=="facebook/opt-125m":
             each_layer = list(range(0,32))
+        elif model_name_or_path=="FacebookAI/xlm-roberta-large":
+            each_layer = list(range(0,24))
 
 
         a0 = -2
         a = [-2] + [-1] + each_layer
         final_acc_per_prompt = []
-        print('baseline_only')
-        print(args.baseline_only)
         if args.baseline_only==True:
             aa = [-1]
         elif args.particular_layer >-3:
@@ -321,7 +225,7 @@ def main(args):
                 tokenized_g_p['input_ids'] = torch.tensor(tokenized_g_p['input_ids'])
 
                 # print("training with penalized model")
-                model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, return_dict=True, cache_dir='/fs/nexus-scratch/peiran/.cache', num_labels=num_label)
+                model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, return_dict=True, cache_dir='/fs/cbcb-lab/heng/peiran', num_labels=num_label)
                 model = get_peft_model(model, peft_config)
                 model.print_trainable_parameters()
                     
@@ -384,18 +288,19 @@ def main(args):
                 
                 
 
-                if any(k in model_name_or_path for k in ("gpt",)):
-                    # print(model_name_or_path)
-                    model.base_model.transformer.h[i].register_forward_hook(hook_fn)
-                elif model_name_or_path == "bert-base-uncased":
-                    model.base_model.bert.encoder.layer[i].register_forward_hook(hook_fn)
-                elif model_name_or_path == "EleutherAI/gpt-j-6b":
-                    model.base_model.transformer.h[i].register_forward_hook(hook_fn)
-                elif model_name_or_path == "FacebookAI/roberta-base":
-                    model.base_model.base_model.encoder.layer[i].register_forward_hook(hook_fn) 
+                # if any(k in model_name_or_path for k in ("gpt",)):
+                #     # print(model_name_or_path)
+                #     model.base_model.transformer.h[i].register_forward_hook(hook_fn)
+                # elif model_name_or_path == "bert-base-uncased":
+                #     model.base_model.bert.encoder.layer[i].register_forward_hook(hook_fn)
+                # elif model_name_or_path == "EleutherAI/gpt-j-6b":
+                #     model.base_model.transformer.h[i].register_forward_hook(hook_fn)
+                # elif model_name_or_path in ["FacebookAI/roberta-base","FacebookAI/xlm-roberta-large"]:
+                #     print('registered hook')
+                #     model.base_model.base_model.encoder.layer[i].register_forward_hook(hook_fn) 
                     
-                if any(k in model_name_or_path for k in ("gpt", "bert", "llama")):
-                    model.config.pad_token_id = tokenizer.pad_token_id
+                # if any(k in model_name_or_path for k in ("gpt", "bert", "llama")):
+                #     model.config.pad_token_id = tokenizer.pad_token_id
                 
 
                 trainer = my_trainer(
@@ -416,10 +321,19 @@ def main(args):
                 print("trainer.metrics_log %s"% trainer.metrics_log)
                 outputs_list = trainer.metrics_log
                 outputs_list = [{**d, 'layer': i, 'prompt': prompt_name} for d in outputs_list]
-                with open(results_dir, 'a', newline='') as file:
-                    writer = csv.DictWriter(file, fieldnames=headers)
-                    for d in outputs_list:
-                        writer.writerow(d)
+                if new_file == True:
+                    headers = outputs_list[0].keys()
+                    with open(results_dir, 'w', newline='') as file:
+                        writer = csv.DictWriter(file, fieldnames=headers)
+                        # Write the headers (column names)
+                        writer.writeheader()
+                        for d in outputs_list:
+                            writer.writerow(d)
+                else:
+                    with open(results_dir, 'a', newline='') as file:
+                        writer = csv.DictWriter(file, fieldnames=headers)
+                        for d in outputs_list:
+                            writer.writerow(d)
             else:
                 print("train the model when the hook layer is %s"% i)
                 # wandb.init(project='prompting' + args.task, 
@@ -437,7 +351,7 @@ def main(args):
                 tokenized_g_p['input_ids'] = torch.tensor(tokenized_g_p['input_ids'])
 
                 # print("training with penalized model")
-                model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, return_dict=True, cache_dir='/fs/nexus-scratch/peiran/.cache', num_labels=num_label)
+                model = AutoModelForSequenceClassification.from_pretrained(model_name_or_path, return_dict=True, cache_dir='/fs/cbcb-lab/heng/peiran', num_labels=num_label)
                 model = get_peft_model(model, peft_config)
                 model.print_trainable_parameters()
 
@@ -448,7 +362,7 @@ def main(args):
                     model.base_model.bert.encoder.layer[i].register_forward_hook(hook_fn)
                 elif model_name_or_path == "EleutherAI/gpt-j-6b":
                     model.base_model.transformer.h[i].register_forward_hook(hook_fn)
-                elif model_name_or_path == "FacebookAI/roberta-base":
+                elif model_name_or_path in ["FacebookAI/roberta-base","FacebookAI/xlm-roberta-large"]:
                     model.base_model.base_model.encoder.layer[i].register_forward_hook(hook_fn) 
                     
                 if any(k in model_name_or_path for k in ("gpt", "bert", "llama")):
@@ -473,10 +387,19 @@ def main(args):
                 print("trainer.metrics_log %s"% trainer.metrics_log)
                 outputs_list = trainer.metrics_log
                 outputs_list = [{**d, 'layer': i, 'prompt': prompt_name} for d in outputs_list]
-                with open(results_dir, 'a', newline='') as file:
-                    writer = csv.DictWriter(file, fieldnames=headers)
-                    for d in outputs_list:
-                        writer.writerow(d)
+                if new_file == True:
+                    headers = outputs_list[0].keys()
+                    with open(results_dir, 'w', newline='') as file:
+                        writer = csv.DictWriter(file, fieldnames=headers)
+                        # Write the headers (column names)
+                        writer.writeheader()
+                        for d in outputs_list:
+                            writer.writerow(d)
+                else:
+                    with open(results_dir, 'a', newline='') as file:
+                        writer = csv.DictWriter(file, fieldnames=headers)
+                        for d in outputs_list:
+                            writer.writerow(d)
                     
         if args.num_of_initial_text == 1:
             break
@@ -490,12 +413,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--similarity", type=str, default = None)
     parser.add_argument("--log_file", default=None, type=str)
-    parser.add_argument("--path", default="FacebookAI/roberta-base", type=str)
+    parser.add_argument("--path", default="bert-base-uncased", type=str)
     parser.add_argument("--hook_layer", default=-1, type=int)
     parser.add_argument("--prompts_dir", default="/fs/nexus-scratch/peiran/Prompt_tuning_with_constraint/prompts", type=str)
     parser.add_argument("--prompt_groups", default=["TRUE", ], type=list)
     parser.add_argument("--prompt", default=None, type=str)
-    parser.add_argument("--task", default="boolq", type=str)
+    parser.add_argument("--task", default="copa", type=str)
     # parser.add_argument("--dataset", default="trec", type=str)
     parser.add_argument("--pile_len", default=-1, type=int)
     parser.add_argument("--learning_rate", default=0.01, type=float)
@@ -507,7 +430,7 @@ if __name__ == '__main__':
     parser.add_argument("--particular_layer", default=-3, type=int)
     parser.add_argument("--baseline_only", default=False, type=bool)
     parser.add_argument("--base_initial", default="Text", type=str)
-
+    
     args = parser.parse_args()
     
     # args.learning_rate = 1e-3
